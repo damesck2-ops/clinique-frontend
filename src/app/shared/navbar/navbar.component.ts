@@ -212,7 +212,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     if (this.auth.hasRole('ADMIN','MEDECIN','RECEPTIONNISTE')) {
       this.chargerNotifications();
-      this.notificationsSubscription = interval(10000).subscribe(() => this.chargerNotifications());
+      this.notificationsSubscription = interval(30000).subscribe(() => this.chargerNotifications());
     }
   }
 

@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ComptabiliteService } from '../../core/services/comptabilite.service';
 import { RouterLink } from '@angular/router';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
-import { PaginerPipe } from '../../shared/pagination/paginer.pipe';
 import { BarChartComponent, SerieGraphique } from '../../shared/bar-chart/bar-chart.component';
 import { EnvoiEmailComponent } from '../../shared/envoi-email/envoi-email.component';
 import { EnvoiRequest, EnvoiService } from '../../core/services/envoi.service';
@@ -12,7 +11,7 @@ import { DocumentService } from '../../core/services/document.service';
 import { BilanPeriode, ComptabiliteResume, Encaissement, PaiementEmploye, PeriodeBilan } from '../../core/models/comptabilite.model';
 
 @Component({
-  selector: 'app-comptabilite', standalone: true, imports: [CommonModule, FormsModule, RouterLink, BarChartComponent, EnvoiEmailComponent, PaginationComponent, PaginerPipe],
+  selector: 'app-comptabilite', standalone: true, imports: [CommonModule, FormsModule, RouterLink, BarChartComponent, EnvoiEmailComponent, PaginationComponent],
   template: `
     <h4><i class="bi bi-calculator"></i> Comptabilité & employés</h4>
     <div class="row g-3 my-2" *ngIf="resume">
@@ -98,7 +97,7 @@ import { BilanPeriode, ComptabiliteResume, Encaissement, PaiementEmploye, Period
           <thead><tr><th>Date</th><th>Patient</th><th>Type</th><th>Médecin</th><th>Prise en charge</th><th>Enregistré par</th>
             <th class="text-end">Montant</th><th class="text-end">Part patient</th><th class="text-end">Part organisme</th></tr></thead>
           <tbody>
-            <tr *ngFor="let e of encaissements | paginer:pageEncaissements">
+            <tr *ngFor="let e of encaissements">
               <td>{{ e.dateEncaissement | date:'dd/MM/yyyy HH:mm' }}</td>
               <td>{{ e.patientNom }} <small class="text-muted">{{ e.numeroDossier }}</small></td>
               <td>
@@ -118,19 +117,19 @@ import { BilanPeriode, ComptabiliteResume, Encaissement, PaiementEmploye, Period
           </tbody>
         </table>
       </div>
-      <app-pagination [page]="pageEncaissements" [total]="encaissements.length" (pageChange)="pageEncaissements = $event"></app-pagination>
+      <app-pagination [page]="pageEncaissements" [totalPages]="pagesEncaissements" (pageChange)="chargerEncaissements($event)"></app-pagination>
     </div>
     <div class="row g-3"><div class="col-12"><div class="card p-3">
-        <h6>Historique des paiements employés</h6><div *ngFor="let p of paiements | paginer:pagePaiements" class="border-bottom py-2">{{ p.datePaiement | date:'dd/MM/yyyy HH:mm' }} - {{ p.employeNom }} : <strong>{{ p.montant | number:'1.0-0' }} FCFA</strong> ({{ p.periode }})</div>
+        <h6>Historique des paiements employés</h6><div *ngFor="let p of paiements" class="border-bottom py-2">{{ p.datePaiement | date:'dd/MM/yyyy HH:mm' }} - {{ p.employeNom }} : <strong>{{ p.montant | number:'1.0-0' }} FCFA</strong> ({{ p.periode }})</div>
         <div *ngIf="paiements.length === 0" class="text-muted">Aucun paiement enregistré.</div>
-        <app-pagination [page]="pagePaiements" [total]="paiements.length" (pageChange)="pagePaiements = $event"></app-pagination>
+        <app-pagination [page]="pagePaiements" [totalPages]="pagesPaiements" (pageChange)="chargerPaiements($event)"></app-pagination>
       </div></div>
     </div>
   `
 })
 export class ComptabiliteComponent implements OnInit {
   resume?: ComptabiliteResume; paiements: PaiementEmploye[] = []; encaissements: Encaissement[] = [];
-  pageEncaissements = 1; pagePaiements = 1;
+  pageEncaissements = 1; pagesEncaissements = 1; pagePaiements = 1; pagesPaiements = 1;
   periodes: { code: PeriodeBilan; libelle: string }[] = [
     { code: 'MOIS', libelle: 'Mensuel' }, { code: 'TRIMESTRE', libelle: '3 mois' },
     { code: 'SEMESTRE', libelle: '6 mois' }, { code: 'ANNEE', libelle: 'Annuel' }];
@@ -209,5 +208,11 @@ export class ComptabiliteComponent implements OnInit {
         { nom: 'Dépenses', valeurs: b.map(x => x.depenses) }];
     });
   }
-  charger(): void { this.service.resume().subscribe(r => this.resume = r); this.service.paiements().subscribe(p => { this.paiements = p; this.pagePaiements = 1; }); this.service.encaissements().subscribe(e => { this.encaissements = e; this.pageEncaissements = 1; }); }
+  charger(): void { this.service.resume().subscribe(r => this.resume = r); this.chargerPaiements(1); this.chargerEncaissements(1); }
+  chargerEncaissements(page: number): void {
+    this.service.encaissementsPage(page).subscribe(p => { this.encaissements = p.content; this.pagesEncaissements = Math.max(1, p.totalPages); this.pageEncaissements = page; });
+  }
+  chargerPaiements(page: number): void {
+    this.service.paiementsPage(page).subscribe(p => { this.paiements = p.content; this.pagesPaiements = Math.max(1, p.totalPages); this.pagePaiements = page; });
+  }
 }

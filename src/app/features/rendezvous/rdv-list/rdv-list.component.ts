@@ -44,7 +44,7 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let r of rendezVousPage">
+            <tr *ngFor="let r of rendezVousList">
               <td>{{ r.dateHeure | date:'dd/MM/yyyy HH:mm' }}</td>
               <td>{{ r.patient?.prenom }} {{ r.patient?.nom }}</td>
               <td>Dr. {{ r.medecin?.prenom }} {{ r.medecin?.nom }}</td>
@@ -73,7 +73,7 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
         </table>
       </div>
     </div>
-    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="page = $event"></app-pagination>
+    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="charger($event)"></app-pagination>
   `
 })
 export class RdvListComponent implements OnInit {
@@ -81,7 +81,7 @@ export class RdvListComponent implements OnInit {
   erreur = '';
   rendezVousCible: RendezVous | null = null;
   page = 1;
-  readonly pageSize = 10;
+  totalPages = 1;
 
   constructor(private rendezVousService: RendezVousService, public auth: AuthService, private route: ActivatedRoute) {}
 
@@ -91,19 +91,14 @@ export class RdvListComponent implements OnInit {
     if (focusId) this.rendezVousService.findById(focusId).subscribe((rdv) => (this.rendezVousCible = rdv));
   }
 
-  charger(): void {
+  charger(page = this.page): void {
     this.erreur = '';
-    this.rendezVousService.findAll().subscribe({
-      next: (data) => { this.rendezVousList = data; this.page = 1; },
+    this.rendezVousService.page(page).subscribe({
+      next: (p) => { this.rendezVousList = p.content; this.totalPages = Math.max(1, p.totalPages); this.page = page; },
       error: (err) => (this.erreur = err.error?.message || 'Impossible de charger les rendez-vous')
     });
   }
 
-  get totalPages(): number { return Math.max(1, Math.ceil(this.rendezVousList.length / this.pageSize)); }
-  get rendezVousPage(): RendezVous[] {
-    const start = (this.page - 1) * this.pageSize;
-    return this.rendezVousList.slice(start, start + this.pageSize);
-  }
 
   changerStatut(r: RendezVous, statut: StatutRendezVous): void {
     if (!r.id) return;

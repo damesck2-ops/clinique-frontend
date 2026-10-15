@@ -3,6 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Patient } from '../models/patient.model';
+import { PageResponse } from '../models/page.model';
+import { TAILLE_PAGE } from '../../shared/pagination/paginer.pipe';
 
 export interface PatientImportResult {
   importes: number;
@@ -19,6 +21,13 @@ export class PatientService {
   findAll(recherche?: string): Observable<Patient[]> {
     const url = recherche ? `${this.apiUrl}?recherche=${encodeURIComponent(recherche)}` : this.apiUrl;
     return this.http.get<Patient[]>(url);
+  }
+
+  /** Page de patients (1-indexée), triée du plus récent au plus ancien. */
+  page(page: number, recherche?: string): Observable<PageResponse<Patient>> {
+    let params = new HttpParams().set('page', page - 1).set('size', TAILLE_PAGE);
+    if (recherche) params = params.set('recherche', recherche);
+    return this.http.get<PageResponse<Patient>>(`${this.apiUrl}/page`, { params });
   }
 
   findById(id: number): Observable<Patient> {

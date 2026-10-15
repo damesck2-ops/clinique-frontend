@@ -187,7 +187,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     if (this.auth.hasRole('ADMIN', 'MEDECIN')) {
       this.chargerAlertes();
-      this.notificationsSubscription = interval(30000).subscribe(() => this.chargerAlertes());
+      this.notificationsSubscription = interval(60000).subscribe(() => this.chargerAlertes());
     }
   }
 

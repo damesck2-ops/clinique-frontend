@@ -35,7 +35,7 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let consultation of consultationsPage">
+            <tr *ngFor="let consultation of consultations">
               <td>{{ consultation.dateConsultation | date:'dd/MM/yyyy HH:mm' }}</td>
               <td>
                 <strong>{{ consultation.patient.prenom }} {{ consultation.patient.nom }}</strong>
@@ -61,26 +61,25 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
         </table>
       </div>
     </div>
-    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="page = $event"></app-pagination>
+    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="charger($event)"></app-pagination>
   `
 })
 export class ConsultationListComponent implements OnInit {
   consultations: Consultation[] = [];
   page = 1;
-  readonly pageSize = 10;
+  totalPages = 1;
 
   constructor(private consultationService: ConsultationService, public auth: AuthService) {}
 
   ngOnInit(): void {
-    this.consultationService.findAll().subscribe((consultations) => {
-      this.consultations = consultations;
-      this.page = 1;
-    });
+    this.charger(1);
   }
 
-  get totalPages(): number { return Math.max(1, Math.ceil(this.consultations.length / this.pageSize)); }
-  get consultationsPage(): Consultation[] {
-    const start = (this.page - 1) * this.pageSize;
-    return this.consultations.slice(start, start + this.pageSize);
+  charger(page: number): void {
+    this.consultationService.page(page).subscribe((p) => {
+      this.consultations = p.content;
+      this.totalPages = Math.max(1, p.totalPages);
+      this.page = page;
+    });
   }
 }

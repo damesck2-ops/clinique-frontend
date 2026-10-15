@@ -3,12 +3,18 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { RendezVous, StatutRendezVous } from '../models/rendezvous.model';
+import { PageResponse } from '../models/page.model';
+import { TAILLE_PAGE } from '../../shared/pagination/paginer.pipe';
 
 @Injectable({ providedIn: 'root' })
 export class RendezVousService {
   private apiUrl = `${environment.apiUrl}/rendezvous`;
 
   constructor(private http: HttpClient) {}
+
+  page(page: number): Observable<PageResponse<RendezVous>> {
+    return this.http.get<PageResponse<RendezVous>>(`${this.apiUrl}/page`, { params: new HttpParams().set('page', page - 1).set('size', TAILLE_PAGE) });
+  }
 
   findAll(filtres?: { patientId?: number; medecinId?: number; debut?: string; fin?: string }): Observable<RendezVous[]> {
     let params = new HttpParams();

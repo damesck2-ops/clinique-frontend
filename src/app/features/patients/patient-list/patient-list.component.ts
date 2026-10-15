@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +6,7 @@ import { Patient } from '../../../core/models/patient.model';
 import { PatientImportResult, PatientService } from '../../../core/services/patient.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { PaginationComponent } from '../../../shared/pagination/pagination.component';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-patient-list',
@@ -60,7 +61,7 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let p of patientsPage">
+            <tr *ngFor="let p of patients">
               <td>{{ p.numeroDossier }}</td>
               <td>{{ p.nom }}</td>
               <td>{{ p.prenom }}</td>
@@ -89,17 +90,19 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
         </table>
       </div>
     </div>
-    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="page = $event"></app-pagination>
+    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="charger($event)"></app-pagination>
   `
 })
-export class PatientListComponent implements OnInit {
+export class PatientListComponent implements OnInit, OnDestroy {
   patients: Patient[] = [];
   recherche = '';
   importEnCours = false;
   importResult?: PatientImportResult;
   importErreur = '';
   page = 1;
-  readonly pageSize = 10;
+  totalPages = 1;
+  private recherche$ = new Subject<string>();
+  private rechercheSub?: Subscription;
 
   erreurSuppression = '';
   messageSuppression = '';
@@ -113,7 +116,8 @@ export class PatientListComponent implements OnInit {
     this.messageSuppression = '';
     this.patientService.delete(p.id!).subscribe({
       next: () => {
-        this.patients = this.patients.filter((x) => x.id !== p.id);
+        // Revient à la page précédente si on vient de vider la dernière
+        this.charger(this.patients.length === 1 && this.page > 1 ? this.page - 1 : this.page);
         this.messageSuppression = `${p.prenom} ${p.nom} a été supprimé.`;
       },
       error: (err) => (this.erreurSuppression = err.error?.message || 'La suppression a échoué.')
@@ -121,21 +125,25 @@ export class PatientListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.charger();
+    // Attend une pause dans la frappe avant d'interroger l'API
+    this.rechercheSub = this.recherche$.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => this.charger(1));
+    this.charger(1);
   }
 
-  charger(): void {
-    this.patientService.findAll().subscribe((data) => { this.patients = data; this.page = 1; });
+  ngOnDestroy(): void {
+    this.rechercheSub?.unsubscribe();
+  }
+
+  charger(page = this.page): void {
+    this.patientService.page(page, this.recherche.trim()).subscribe((p) => {
+      this.patients = p.content;
+      this.totalPages = Math.max(1, p.totalPages);
+      this.page = page;
+    });
   }
 
   rechercher(): void {
-    this.patientService.findAll(this.recherche).subscribe((data) => { this.patients = data; this.page = 1; });
-  }
-
-  get totalPages(): number { return Math.max(1, Math.ceil(this.patients.length / this.pageSize)); }
-  get patientsPage(): Patient[] {
-    const start = (this.page - 1) * this.pageSize;
-    return this.patients.slice(start, start + this.pageSize);
+    this.recherche$.next(this.recherche.trim());
   }
 
   importer(event: Event): void {
@@ -151,7 +159,7 @@ export class PatientListComponent implements OnInit {
       next: (resultat) => {
         this.importResult = resultat;
         this.importEnCours = false;
-        this.charger();
+        this.charger(1);
       },
       error: (erreur) => {
         this.importErreur = erreur.error?.message || 'L import du fichier a echoue.';

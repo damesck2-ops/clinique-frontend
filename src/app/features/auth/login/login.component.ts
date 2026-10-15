@@ -13,7 +13,7 @@ import { TraduirePipe } from '../../../core/i18n/traduire.pipe';
     <div class="login-wrapper d-flex align-items-center justify-content-center">
       <div class="login-shell shadow">
         <section class="medical-banner" aria-label="Espace médical Cabinet Médical Demba Bodiel SY">
-          <img src="assets/login-clinic.png" alt="Accueil du Cabinet Médical Demba Bodiel SY">
+          <img src="assets/login-clinic.jpg" alt="Accueil du Cabinet Médical Demba Bodiel SY">
           <div class="medical-banner-caption"><i class="bi bi-shield-check"></i><span>{{ 'login.slogan1' | t }}<br>{{ 'login.slogan2' | t }}</span></div>
         </section>
 

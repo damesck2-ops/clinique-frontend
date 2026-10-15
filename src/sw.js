@@ -1,6 +1,6 @@
 /* Service worker : rend l'application installable et garde l'interface disponible hors connexion.
    Seules les ressources de l'application (même origine) sont mises en cache, jamais les appels à l'API. */
-const CACHE = 'eclinique-v1';
+const CACHE = 'eclinique-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(['/', '/index.html'])));

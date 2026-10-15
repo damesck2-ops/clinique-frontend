@@ -31,7 +31,7 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let f of facturesPage">
+            <tr *ngFor="let f of factures">
               <td>{{ f.numeroFacture }}</td>
               <td>{{ f.dateFacture | date:'dd/MM/yyyy' }}</td>
               <td>{{ f.patient?.prenom }} {{ f.patient?.nom }}</td>
@@ -52,27 +52,26 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
         </table>
       </div>
     </div>
-    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="page = $event"></app-pagination>
+    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="charger($event)"></app-pagination>
   `
 })
 export class FactureListComponent implements OnInit {
   factures: Facture[] = [];
   page = 1;
-  readonly pageSize = 10;
+  totalPages = 1;
 
   constructor(private factureService: FactureService) {}
 
   ngOnInit(): void {
-    this.factureService.findAll().subscribe((data) => {
-      this.factures = data;
-      this.page = 1;
-    });
+    this.charger(1);
   }
 
-  get totalPages(): number { return Math.max(1, Math.ceil(this.factures.length / this.pageSize)); }
-  get facturesPage(): Facture[] {
-    const start = (this.page - 1) * this.pageSize;
-    return this.factures.slice(start, start + this.pageSize);
+  charger(page: number): void {
+    this.factureService.page(page).subscribe((p) => {
+      this.factures = p.content;
+      this.totalPages = Math.max(1, p.totalPages);
+      this.page = page;
+    });
   }
 
   traduireStatut(statut?: StatutFacture): string {
