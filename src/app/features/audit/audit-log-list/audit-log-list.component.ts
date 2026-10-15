@@ -133,7 +133,7 @@ export class AuditLogListComponent implements OnInit {
         debut: this.filtres.debut || undefined,
         fin: this.filtres.fin || undefined,
         page,
-        taille: 20
+        taille: 10
       })
       .subscribe((res) => (this.page = res));
   }

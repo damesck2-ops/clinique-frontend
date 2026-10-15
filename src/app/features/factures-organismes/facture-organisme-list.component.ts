@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { PaginerPipe } from '../../shared/pagination/paginer.pipe';
 import { FactureOrganismeService } from '../../core/services/facture-organisme.service';
 import { OrganismeService } from '../../core/services/organisme.service';
 import { FactureOrganisme, Organisme, PriseEnCharge } from '../../core/models/organisme.model';
@@ -10,7 +12,7 @@ import { EnvoiResultat, EnvoiService } from '../../core/services/envoi.service';
 @Component({
   selector: 'app-facture-organisme-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, PaginationComponent, PaginerPipe],
   template: `
     <h4 class="mb-3"><i class="bi bi-receipt"></i> Factures assurances & IPM</h4>
 
@@ -57,7 +59,7 @@ import { EnvoiResultat, EnvoiService } from '../../core/services/envoi.service';
           <table class="table table-sm mb-0">
             <thead><tr><th>Date</th><th>Patient</th><th>Matricule</th><th>Acte</th><th class="text-end">Montant</th><th class="text-end">Part organisme</th></tr></thead>
             <tbody>
-              <tr *ngFor="let e of apercu">
+              <tr *ngFor="let e of apercu | paginer:pageApercu">
                 <td>{{ e.date | date:'dd/MM/yyyy' }}</td>
                 <td>{{ e.patientNom }}</td><td>{{ e.matriculeAssure || '-' }}</td>
                 <td>{{ e.acte }}<span class="text-muted small" *ngIf="e.reference"> · {{ e.reference }}</span></td>
@@ -69,6 +71,7 @@ import { EnvoiResultat, EnvoiService } from '../../core/services/envoi.service';
               <td class="text-end">{{ totalApercu | number:'1.0-0' }} FCFA</td></tr></tfoot>
           </table>
         </div>
+        <app-pagination *ngIf="apercu.length" [page]="pageApercu" [total]="apercu.length" (pageChange)="pageApercu = $event"></app-pagination>
       </div>
     </div>
 
@@ -101,7 +104,7 @@ import { EnvoiResultat, EnvoiService } from '../../core/services/envoi.service';
           <thead><tr><th>N°</th><th>Organisme</th><th>Période</th><th>Émise le</th><th class="text-end">Lignes</th>
             <th class="text-end">Montant</th><th>Statut</th><th>Envoi</th></tr></thead>
           <tbody>
-            <tr *ngFor="let f of factures" class="cliquable" (click)="ouvrir(f)">
+            <tr *ngFor="let f of factures | paginer:page" class="cliquable" (click)="ouvrir(f)">
               <td><strong>{{ f.numero }}</strong></td>
               <td>{{ f.organisme.nom }}</td>
               <td>{{ f.periodeDebut | date:'dd/MM/yyyy' }} → {{ f.periodeFin | date:'dd/MM/yyyy' }}</td>
@@ -119,6 +122,7 @@ import { EnvoiResultat, EnvoiService } from '../../core/services/envoi.service';
           </tbody>
         </table>
       </div>
+      <app-pagination [page]="page" [total]="factures.length" (pageChange)="page = $event"></app-pagination>
     </div>
   `,
   styles: [`.cliquable { cursor: pointer; }`]
@@ -126,6 +130,8 @@ import { EnvoiResultat, EnvoiService } from '../../core/services/envoi.service';
 export class FactureOrganismeListComponent implements OnInit {
   organismes: Organisme[] = [];
   factures: FactureOrganisme[] = [];
+  page = 1;
+  pageApercu = 1;
   organismeId: number | null = null;
   filtreOrganisme: number | null = null;
   debut = '';
@@ -158,7 +164,7 @@ export class FactureOrganismeListComponent implements OnInit {
     this.charger();
   }
 
-  charger(): void { this.service.findAll(this.filtreOrganisme ?? undefined).subscribe((f) => (this.factures = f)); }
+  charger(): void { this.service.findAll(this.filtreOrganisme ?? undefined).subscribe((f) => { this.factures = f; this.page = 1; }); }
 
   get totalApercu(): number { return (this.apercu || []).reduce((s, e) => s + e.partOrganisme, 0); }
 
@@ -168,7 +174,7 @@ export class FactureOrganismeListComponent implements OnInit {
   voirApercu(): void {
     this.erreur = '';
     this.service.apercu(this.requete()).subscribe({
-      next: (a) => (this.apercu = a),
+      next: (a) => { this.apercu = a; this.pageApercu = 1; },
       error: (err) => (this.erreur = err.error?.message || 'Erreur lors de l\'aperçu')
     });
   }

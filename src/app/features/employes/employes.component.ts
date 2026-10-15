@@ -113,7 +113,7 @@ export class EmployesComponent implements OnInit {
   erreur = ''; message = ''; enCours = false;
   constructor(private service: ComptabiliteService) {}
   ngOnInit(): void { this.charger(0); }
-  charger(page: number): void { this.page = page; this.service.employesPage(page, 8).subscribe(result => { this.employes = result.content; this.totalPages = result.totalPages; this.totalElements = result.totalElements; }); }
+  charger(page: number): void { this.page = page; this.service.employesPage(page, 10).subscribe(result => { this.employes = result.content; this.totalPages = result.totalPages; this.totalElements = result.totalElements; }); }
   creer(): void { this.service.creerEmploye(this.nouveau).subscribe(() => { this.nouveau = { role: 'EMPLOYE', actif: true }; this.formulaire = false; this.charger(this.page); }); }
   libelleRole(role: Role): string { return LIBELLES_ROLE[role] ?? role; }
 

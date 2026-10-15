@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TAILLE_PAGE } from './paginer.pipe';
 
 @Component({
   selector: 'app-pagination',
@@ -24,5 +25,7 @@ import { CommonModule } from '@angular/common';
 export class PaginationComponent {
   @Input() page = 1;
   @Input() totalPages = 1;
+  /** Alternative à totalPages : nombre total d'éléments, paginés par TAILLE_PAGE. */
+  @Input() set total(n: number) { this.totalPages = Math.max(1, Math.ceil(n / TAILLE_PAGE)); }
   @Output() pageChange = new EventEmitter<number>();
 }

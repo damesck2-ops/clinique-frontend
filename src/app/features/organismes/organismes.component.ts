@@ -2,13 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { PaginerPipe } from '../../shared/pagination/paginer.pipe';
 import { OrganismeService } from '../../core/services/organisme.service';
 import { CreanceOrganisme, Organisme } from '../../core/models/organisme.model';
 
 @Component({
   selector: 'app-organismes',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, PaginationComponent, PaginerPipe],
   template: `
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h4 class="mb-0"><i class="bi bi-building"></i> Assurances & IPM</h4>
@@ -27,7 +29,7 @@ import { CreanceOrganisme, Organisme } from '../../core/models/organisme.model';
               <thead><tr><th>Organisme</th><th>Type</th><th class="text-end">Taux</th><th class="text-end">Prises en charge</th>
                 <th class="text-end">Non facturé</th><th class="text-end">Facturé en attente</th><th class="text-end">Payé</th><th></th></tr></thead>
               <tbody>
-                <tr *ngFor="let o of organismes" [class.text-muted]="!o.actif">
+                <tr *ngFor="let o of organismes | paginer:page" [class.text-muted]="!o.actif">
                   <td><strong>{{ o.nom }}</strong> <span *ngIf="!o.actif" class="badge bg-secondary">inactif</span>
                     <div class="small text-muted">{{ o.contact }} {{ o.telephone }}</div></td>
                   <td><span class="badge" [class.bg-primary]="o.type === 'ASSURANCE'" [class.bg-info]="o.type === 'IPM'">{{ o.type === 'IPM' ? 'IPM' : 'Assurance' }}</span></td>
@@ -50,6 +52,7 @@ import { CreanceOrganisme, Organisme } from '../../core/models/organisme.model';
               </tfoot>
             </table>
           </div>
+          <app-pagination [page]="page" [total]="organismes.length" (pageChange)="page = $event"></app-pagination>
         </div>
       </div>
 
@@ -91,6 +94,7 @@ import { CreanceOrganisme, Organisme } from '../../core/models/organisme.model';
 })
 export class OrganismesComponent implements OnInit {
   organismes: Organisme[] = [];
+  page = 1;
   creances: CreanceOrganisme[] = [];
   edition: Organisme = this.vide();
   erreur = '';
@@ -102,7 +106,7 @@ export class OrganismesComponent implements OnInit {
   ngOnInit(): void { this.charger(); }
 
   charger(): void {
-    this.service.findAll().subscribe((o) => (this.organismes = o));
+    this.service.findAll().subscribe((o) => { this.organismes = o; this.page = 1; });
     this.service.creances().subscribe((c) => (this.creances = c));
   }
 

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { PaginationComponent } from '../../../shared/pagination/pagination.component';
+import { PaginerPipe } from '../../../shared/pagination/paginer.pipe';
 import { Patient } from '../../../core/models/patient.model';
 import { Consultation } from '../../../core/models/consultation.model';
 import { PatientService } from '../../../core/services/patient.service';
@@ -11,7 +13,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-patient-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, PaginationComponent, PaginerPipe],
   template: `
     <div *ngIf="patient">
       <div class="d-flex justify-content-between align-items-start mb-3">
@@ -75,7 +77,7 @@ import { AuthService } from '../../../core/services/auth.service';
 
       <h5 class="mb-3"><i class="bi bi-journal-medical"></i> Historique des consultations</h5>
 
-      <div class="card mb-3" *ngFor="let c of consultations">
+      <div class="card mb-3" *ngFor="let c of consultations | paginer:pageConsultations">
         <div class="card-body">
           <div class="d-flex justify-content-between">
             <h6 class="card-title">{{ c.dateConsultation | date:'dd/MM/yyyy HH:mm' }}
@@ -105,6 +107,7 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
         </div>
       </div>
+      <app-pagination [page]="pageConsultations" [total]="consultations.length" (pageChange)="pageConsultations = $event"></app-pagination>
       <p class="text-muted" *ngIf="consultations.length === 0">Aucune consultation enregistrée pour ce patient.</p>
 
       <section class="ordonnance-print" *ngIf="ordonnance">
@@ -183,6 +186,7 @@ export class PatientDetailComponent implements OnInit {
     return fin < aujourdhui;
   }
   consultations: Consultation[] = [];
+  pageConsultations = 1;
   ordonnance: Consultation | null = null;
 
   constructor(
@@ -209,7 +213,7 @@ export class PatientDetailComponent implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.patientService.findById(id).subscribe((p) => (this.patient = p));
-    this.consultationService.findByPatient(id).subscribe((c) => (this.consultations = c));
+    this.consultationService.findByPatient(id).subscribe((c) => { this.consultations = c; this.pageConsultations = 1; });
   }
 
   imprimerRapport(): void {

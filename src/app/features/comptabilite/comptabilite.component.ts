@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComptabiliteService } from '../../core/services/comptabilite.service';
 import { RouterLink } from '@angular/router';
+import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { PaginerPipe } from '../../shared/pagination/paginer.pipe';
 import { BarChartComponent, SerieGraphique } from '../../shared/bar-chart/bar-chart.component';
 import { EnvoiEmailComponent } from '../../shared/envoi-email/envoi-email.component';
 import { EnvoiRequest, EnvoiService } from '../../core/services/envoi.service';
@@ -10,7 +12,7 @@ import { DocumentService } from '../../core/services/document.service';
 import { BilanPeriode, ComptabiliteResume, Encaissement, PaiementEmploye, PeriodeBilan } from '../../core/models/comptabilite.model';
 
 @Component({
-  selector: 'app-comptabilite', standalone: true, imports: [CommonModule, FormsModule, RouterLink, BarChartComponent, EnvoiEmailComponent],
+  selector: 'app-comptabilite', standalone: true, imports: [CommonModule, FormsModule, RouterLink, BarChartComponent, EnvoiEmailComponent, PaginationComponent, PaginerPipe],
   template: `
     <h4><i class="bi bi-calculator"></i> Comptabilité & employés</h4>
     <div class="row g-3 my-2" *ngIf="resume">
@@ -96,7 +98,7 @@ import { BilanPeriode, ComptabiliteResume, Encaissement, PaiementEmploye, Period
           <thead><tr><th>Date</th><th>Patient</th><th>Type</th><th>Médecin</th><th>Prise en charge</th><th>Enregistré par</th>
             <th class="text-end">Montant</th><th class="text-end">Part patient</th><th class="text-end">Part organisme</th></tr></thead>
           <tbody>
-            <tr *ngFor="let e of encaissements">
+            <tr *ngFor="let e of encaissements | paginer:pageEncaissements">
               <td>{{ e.dateEncaissement | date:'dd/MM/yyyy HH:mm' }}</td>
               <td>{{ e.patientNom }} <small class="text-muted">{{ e.numeroDossier }}</small></td>
               <td>
@@ -116,16 +118,19 @@ import { BilanPeriode, ComptabiliteResume, Encaissement, PaiementEmploye, Period
           </tbody>
         </table>
       </div>
+      <app-pagination [page]="pageEncaissements" [total]="encaissements.length" (pageChange)="pageEncaissements = $event"></app-pagination>
     </div>
     <div class="row g-3"><div class="col-12"><div class="card p-3">
-        <h6>Historique des paiements employés</h6><div *ngFor="let p of paiements" class="border-bottom py-2">{{ p.datePaiement | date:'dd/MM/yyyy HH:mm' }} - {{ p.employeNom }} : <strong>{{ p.montant | number:'1.0-0' }} FCFA</strong> ({{ p.periode }})</div>
+        <h6>Historique des paiements employés</h6><div *ngFor="let p of paiements | paginer:pagePaiements" class="border-bottom py-2">{{ p.datePaiement | date:'dd/MM/yyyy HH:mm' }} - {{ p.employeNom }} : <strong>{{ p.montant | number:'1.0-0' }} FCFA</strong> ({{ p.periode }})</div>
         <div *ngIf="paiements.length === 0" class="text-muted">Aucun paiement enregistré.</div>
+        <app-pagination [page]="pagePaiements" [total]="paiements.length" (pageChange)="pagePaiements = $event"></app-pagination>
       </div></div>
     </div>
   `
 })
 export class ComptabiliteComponent implements OnInit {
   resume?: ComptabiliteResume; paiements: PaiementEmploye[] = []; encaissements: Encaissement[] = [];
+  pageEncaissements = 1; pagePaiements = 1;
   periodes: { code: PeriodeBilan; libelle: string }[] = [
     { code: 'MOIS', libelle: 'Mensuel' }, { code: 'TRIMESTRE', libelle: '3 mois' },
     { code: 'SEMESTRE', libelle: '6 mois' }, { code: 'ANNEE', libelle: 'Annuel' }];
@@ -204,5 +209,5 @@ export class ComptabiliteComponent implements OnInit {
         { nom: 'Dépenses', valeurs: b.map(x => x.depenses) }];
     });
   }
-  charger(): void { this.service.resume().subscribe(r => this.resume = r); this.service.paiements().subscribe(p => this.paiements = p); this.service.encaissements().subscribe(e => this.encaissements = e); }
+  charger(): void { this.service.resume().subscribe(r => this.resume = r); this.service.paiements().subscribe(p => { this.paiements = p; this.pagePaiements = 1; }); this.service.encaissements().subscribe(e => { this.encaissements = e; this.pageEncaissements = 1; }); }
 }
