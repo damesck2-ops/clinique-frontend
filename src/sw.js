@@ -1,6 +1,6 @@
 /* Service worker : rend l'application installable et garde l'interface disponible hors connexion.
    Seules les ressources de l'application (même origine) sont mises en cache, jamais les appels à l'API. */
-const CACHE = 'eclinique-v2';
+const CACHE = 'eclinique-v3';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(['/', '/index.html'])));
@@ -37,7 +37,9 @@ self.addEventListener('fetch', (event) => {
   // Scripts, styles, images, polices : cache d'abord (les fichiers générés sont hachés).
   event.respondWith(
     caches.match(requete).then((enCache) => enCache || fetch(requete).then((reponse) => {
-      if (reponse.ok) {
+      // Un fichier supprimé par un déploiement renvoie index.html : ne jamais le garder à la place du JS
+      const html = (reponse.headers.get('content-type') || '').includes('text/html');
+      if (reponse.ok && !html) {
         const copie = reponse.clone();
         caches.open(CACHE).then((cache) => cache.put(requete, copie));
       }
