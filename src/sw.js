@@ -1,6 +1,9 @@
 /* Service worker : rend l'application installable et garde l'interface disponible hors connexion.
    Seules les ressources de l'application (même origine) sont mises en cache, jamais les appels à l'API. */
-const CACHE = 'eclinique-v3';
+const CACHE = 'eclinique-v4';
+
+// Réponse de secours quand le réseau est coupé et que rien n'est en cache
+const horsLigne = () => new Response('Hors connexion', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(['/', '/index.html'])));
@@ -29,7 +32,9 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE).then((cache) => cache.put('/index.html', copie));
           return reponse;
         })
-        .catch(() => caches.match('/index.html'))
+        .catch(() => caches.match('/index.html')
+          .then((enCache) => enCache || caches.match('/'))
+          .then((enCache) => enCache || horsLigne()))
     );
     return;
   }
@@ -44,6 +49,6 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE).then((cache) => cache.put(requete, copie));
       }
       return reponse;
-    }))
+    }).catch(() => horsLigne()))
   );
 });
