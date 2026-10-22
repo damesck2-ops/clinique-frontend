@@ -16,18 +16,27 @@ import { I18nService } from '../../core/i18n/i18n.service';
   standalone: true,
   imports: [CommonModule, RouterLink, BarChartComponent, TraduirePipe],
   template: `
-    <h3 class="mb-4">{{ 'dash.bonjour' | t }}, {{ auth.currentUser()?.prenom }} 👋</h3>
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-4">
+      <h3 class="mb-0">{{ 'dash.bonjour' | t }}, {{ auth.currentUser()?.prenom }} 👋</h3>
 
-    <div class="alert alert-warning shadow-sm" *ngIf="auth.hasRole('ADMIN','MEDECIN') && alertes.length > 0">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <strong>{{ 'dash.nouvellesDemandes' | t }}</strong>
-        <span class="badge bg-danger">{{ alertes.length }}</span>
+      <div class="alertes-wrapper" *ngIf="auth.hasRole('ADMIN','MEDECIN')">
+        <button type="button" class="btn btn-light alertes-toggle" [class.has-alertes]="alertes.length > 0"
+                (click)="alertesOuvertes = !alertesOuvertes" [title]="'dash.nouvellesDemandes' | t">
+          <i class="bi" [class.bi-bell-fill]="alertes.length > 0" [class.bi-bell]="alertes.length === 0"></i>
+          <span class="badge rounded-pill bg-danger" *ngIf="alertes.length > 0">{{ alertes.length }}</span>
+        </button>
+        <div class="alertes-panel shadow" *ngIf="alertesOuvertes">
+          <div class="alertes-panel-header">
+            <strong>{{ 'dash.nouvellesDemandes' | t }}</strong>
+            <span class="badge bg-danger" *ngIf="alertes.length > 0">{{ alertes.length }}</span>
+          </div>
+          <button type="button" class="dashboard-alert" *ngFor="let alerte of alertes" (click)="ouvrirAlerte(alerte)">
+            <i class="bi" [class.bi-journal-medical]="alerte.type === 'PATIENT_CONSULTATION'" [class.bi-calendar-check]="alerte.type === 'PATIENT_RENDEZVOUS'"></i>
+            <span>{{ alerte.message }} <small>{{ alerte.dateCreation | date:'dd/MM/yyyy HH:mm' }}</small></span>
+          </button>
+          <div class="text-muted small p-2" *ngIf="alertes.length === 0">{{ 'dash.aucuneDemande' | t }}</div>
+        </div>
       </div>
-      <button type="button" class="dashboard-alert" *ngFor="let alerte of alertes" (click)="ouvrirAlerte(alerte)">
-        <i class="bi" [class.bi-journal-medical]="alerte.type === 'PATIENT_CONSULTATION'" [class.bi-calendar-check]="alerte.type === 'PATIENT_RENDEZVOUS'"></i>
-        <span>{{ alerte.message }} <small>{{ alerte.dateCreation | date:'dd/MM/yyyy HH:mm' }}</small></span>
-      </button>
     </div>
 
     <div class="row g-3" *ngIf="stats">
@@ -137,8 +146,14 @@ import { I18nService } from '../../core/i18n/i18n.service';
   `
   ,
   styles: [`
-    .dashboard-alert { display: flex; align-items: center; gap: .65rem; width: 100%; margin-top: .35rem; padding: .55rem .7rem; border: 0; border-radius: 6px; color: #664d03; background: rgba(255, 255, 255, .55); text-align: left; }
-    .dashboard-alert:hover { background: rgba(255, 255, 255, .9); }
+    .alertes-wrapper { position: relative; flex-shrink: 0; }
+    .alertes-toggle { position: relative; font-size: 1.35rem; line-height: 1; padding: .45rem .6rem; border-radius: 50%; }
+    .alertes-toggle.has-alertes i { color: #dc3545; }
+    .alertes-toggle .badge { position: absolute; top: -2px; right: -4px; font-size: .65rem; }
+    .alertes-panel { position: absolute; right: 0; top: calc(100% + .4rem); z-index: 1050; width: min(360px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto; padding: .5rem; border-radius: 8px; background: var(--bs-body-bg, #fff); border: 1px solid rgba(0, 0, 0, .1); }
+    .alertes-panel-header { display: flex; align-items: center; gap: .5rem; padding: .25rem .4rem .4rem; }
+    .dashboard-alert { display: flex; align-items: center; gap: .65rem; width: 100%; margin-top: .35rem; padding: .55rem .7rem; border: 0; border-radius: 6px; color: #664d03; background: #fff8e1; text-align: left; }
+    .dashboard-alert:hover { background: #ffecb3; }
     .dashboard-alert i { color: #9a7400; }
     .dashboard-alert small { display: block; color: #806d35; }
     /* Smartphone : tuiles compactes sur deux colonnes, comme l'écran d'accueil d'une application. */
@@ -153,6 +168,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
 export class DashboardComponent implements OnInit, OnDestroy {
   stats: DashboardStats | null = null;
   alertes: Notification[] = [];
+  alertesOuvertes = false;
   anneeCourante = new Date().getFullYear();
   libellesBilan: string[] = [];
   seriesRecettes: SerieGraphique[] = [];
@@ -203,6 +219,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ouvrirAlerte(alerte: Notification): void {
+    this.alertesOuvertes = false;
     this.notificationService.marquerLue(alerte.id).subscribe(() => this.chargerAlertes());
     if (alerte.type === 'PATIENT_CONSULTATION') {
       this.router.navigate(['/consultations/nouvelle', alerte.patientId]);

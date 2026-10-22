@@ -78,6 +78,7 @@ export const FR = {
 
   'dash.bonjour': 'Bonjour',
   'dash.nouvellesDemandes': 'Nouvelles demandes à traiter',
+  'dash.aucuneDemande': 'Aucune demande en attente',
   'dash.patients': 'Patients',
   'dash.rdvAujourdhui': "RDV aujourd'hui",
   'dash.rdvPlanifies': 'RDV planifiés',

@@ -80,6 +80,7 @@ export const EN: Record<CleTraduction, string> = {
 
   'dash.bonjour': 'Hello',
   'dash.nouvellesDemandes': 'New requests to handle',
+  'dash.aucuneDemande': 'No pending requests',
   'dash.patients': 'Patients',
   'dash.rdvAujourdhui': "Today's appointments",
   'dash.rdvPlanifies': 'Scheduled appointments',
